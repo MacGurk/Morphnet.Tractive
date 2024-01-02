@@ -1,9 +1,18 @@
-﻿namespace Morphnet.TractiveClient;
+﻿using System.Text.Json.Serialization;
+
+namespace Morphnet.TractiveClient;
 
 public class AuthResponse
 {
-    public string user_id { get; set; }
-    public string client_id { get; set; }
-    public int expires_at { get; set; }
-    public string access_token { get; set; }
+    [JsonPropertyName("user_id")]
+    public string UserId { get; set; } = null!;
+
+    [JsonPropertyName("client_id")]
+    public string ClientId { get; set; } = null!;
+
+    [JsonPropertyName("expires_at")]
+    public int ExpiresAt { get; set; }
+    
+    [JsonPropertyName("access_token")]
+    public string AccessToken { get; set; } = null!;
 }

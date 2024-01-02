@@ -3,33 +3,23 @@ using System.Net.Http.Json;
 
 namespace Morphnet.TractiveClient;
 
-public class Tractive
+public class Tractive(string login, string password)
 {
     private const string TractiveBaseUrl = "https://graph.tractive.com/4";
     private const string TractiveClientId = "5728aa1fc9077f7c32000186";
-    private readonly HttpClient _httpClient;
+    
+    private readonly HttpClient _httpClient = new();
 
     private string _token = string.Empty;
     private DateTimeOffset _tokenExpire;
     private string _userId = string.Empty;
 
-    private readonly string _login;
-    private readonly string _password;
-    
-
-    public Tractive(HttpClient httpClient, string login, string password)
-    {
-        _httpClient = httpClient;
-        _login = login;
-        _password = password;
-    }
-
-    public async Task Authenticate()
+    public async Task AuthenticateAsync()
     {
         var formContent = new FormUrlEncodedContent(new[]
         {
-            new KeyValuePair<string, string>("platform_email", _login),
-            new KeyValuePair<string, string>("platform_token", _password),
+            new KeyValuePair<string, string>("platform_email", login),
+            new KeyValuePair<string, string>("platform_token", password),
             new KeyValuePair<string, string>("grant_type", "tractive")
         });
         
@@ -46,16 +36,16 @@ public class Tractive
         }
 
         var authContent = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        _token = authContent!.access_token;
+        _token = authContent!.AccessToken;
         _tokenExpire = DateTimeOffset.FromUnixTimeMilliseconds(1672068505);
-        _userId = authContent!.user_id;
+        _userId = authContent!.UserId;
     }
 
-    public async Task<List<Tracker>> GetTrackers()
+    public async Task<List<Tracker>> GetTrackersAsync()
     {
         if (!TokenIsValid())
         {
-            await Authenticate();
+            await AuthenticateAsync();
         }
 
         using var requestMessage = new HttpRequestMessage(HttpMethod.Get, $"{TractiveBaseUrl}/user/{_userId}/trackers");
@@ -74,11 +64,11 @@ public class Tractive
         return trackers ?? new List<Tracker>();
     }
 
-    public async Task<(double lat, double lon)?> GetTrackerPosition(string trackerId)
+    public async Task<DevicePosReport?> GetDevicePosReportAsync(string trackerId)
     {
         if (!TokenIsValid())
         {
-            await Authenticate();
+            await AuthenticateAsync();
         }
         
         using var requestMessage = new HttpRequestMessage(HttpMethod.Get, $"{TractiveBaseUrl}/device_pos_report/{trackerId}");
@@ -99,7 +89,8 @@ public class Tractive
         {
             return null;
         }
-        return (lat: trackerPosition.latlong[0], lon: trackerPosition.latlong[1]);
+
+        return trackerPosition;
     }
 
     private bool TokenIsValid()
